@@ -99,7 +99,7 @@ impl Compaction {
     /// is_base_level_for checks whether the given key may exist in levels higher than this
     /// compaction's level plus 2. I.e., whether the levels for this compaction are the last ones
     /// to contain the key.
-    pub fn is_base_level_for<'a>(&mut self, k: UserKey<'a>) -> bool {
+    pub fn is_base_level_for(&mut self, k: UserKey) -> bool {
         assert!(self.input_version.is_some());
         let inp_version = self.input_version.as_ref().unwrap();
         for level in self.level + 2..NUM_LEVELS {
@@ -134,7 +134,7 @@ impl Compaction {
         self.num_inputs(0) == 1 && self.num_inputs(1) == 0 && inputs_size < 10 * self.max_file_size
     }
 
-    pub fn should_stop_before<'a>(&mut self, k: InternalKey<'a>) -> bool {
+    pub fn should_stop_before(&mut self, k: InternalKey) -> bool {
         if self.grandparents.is_none() {
             self.seen_key = true;
             return false;
@@ -328,11 +328,11 @@ impl VersionSet {
         Some(c)
     }
 
-    pub fn compact_range<'a, 'b>(
+    pub fn compact_range(
         &mut self,
         level: usize,
-        from: InternalKey<'a>,
-        to: InternalKey<'b>,
+        from: InternalKey,
+        to: InternalKey,
     ) -> Option<Compaction> {
         assert!(self.current.is_some());
         let mut inputs = self

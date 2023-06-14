@@ -9,7 +9,7 @@ type WrappedCmp = Rc<Box<dyn Cmp>>;
 /// Comparator trait, supporting types that can be nested (i.e., add additional functionality on
 /// top of an inner comparator)
 pub trait Cmp {
-    /// Compare to byte strings, bytewise.
+    /// Compare to byte strings, byte wise.
     fn cmp(&self, a: &[u8], b: &[u8]) -> Ordering;
 
     /// Return the shortest byte string that compares "Greater" to the first argument and "Less" to
@@ -30,10 +30,6 @@ pub struct DefaultCmp;
 impl Cmp for DefaultCmp {
     fn cmp(&self, a: &[u8], b: &[u8]) -> Ordering {
         a.cmp(b)
-    }
-
-    fn id(&self) -> &'static str {
-        "leveldb.BytewiseComparator"
     }
 
     fn find_shortest_sep(&self, a: &[u8], b: &[u8]) -> Vec<u8> {
@@ -101,6 +97,10 @@ impl Cmp for DefaultCmp {
         result.push(255);
         result
     }
+
+    fn id(&self) -> &'static str {
+        "leveldb.BytewiseComparator"
+    }
 }
 
 /// Same as memtable_key_cmp, but for InternalKeys.
@@ -110,10 +110,6 @@ pub struct InternalKeyCmp(pub Rc<Box<dyn Cmp>>);
 impl Cmp for InternalKeyCmp {
     fn cmp(&self, a: &[u8], b: &[u8]) -> Ordering {
         key_types::cmp_internal_key(self.0.as_ref().as_ref(), a, b)
-    }
-
-    fn id(&self) -> &'static str {
-        self.0.id()
     }
 
     fn find_shortest_sep(&self, a: &[u8], b: &[u8]) -> Vec<u8> {
@@ -139,6 +135,10 @@ impl Cmp for InternalKeyCmp {
         let succ: Vec<u8> = self.0.find_short_succ(key);
         LookupKey::new(&succ, seq).internal_key().to_vec()
     }
+
+    fn id(&self) -> &'static str {
+        self.0.id()
+    }
 }
 
 impl InternalKeyCmp {
@@ -161,10 +161,6 @@ impl Cmp for MemtableKeyCmp {
         key_types::cmp_memtable_key(self.0.as_ref().as_ref(), a, b)
     }
 
-    fn id(&self) -> &'static str {
-        self.0.id()
-    }
-
     // The following two impls should not be used (by principle) although they should be correct.
     // They will crash the program.
     fn find_shortest_sep(&self, _: &[u8], _: &[u8]) -> Vec<u8> {
@@ -173,6 +169,10 @@ impl Cmp for MemtableKeyCmp {
 
     fn find_short_succ(&self, _: &[u8]) -> Vec<u8> {
         panic!("find* functions are invalid on MemtableKeyCmp");
+    }
+
+    fn id(&self) -> &'static str {
+        self.0.id()
     }
 }
 

@@ -182,7 +182,7 @@ impl Table {
     /// This is done this way because some key types, like internal keys, will not result in an
     /// exact match; it depends on other comparators than the one that the table reader knows
     /// whether a match is acceptable.
-    pub fn get<'a>(&self, key: InternalKey<'a>) -> Result<Option<(Vec<u8>, Vec<u8>)>> {
+    pub fn get(&self, key: InternalKey) -> Result<Option<(Vec<u8>, Vec<u8>)>> {
         let mut index_iter = self.indexblock.iter();
         index_iter.seek(key);
 
@@ -304,6 +304,14 @@ impl LdbIterator for TableIterator {
         }
     }
 
+    fn current(&self, key: &mut Vec<u8>, val: &mut Vec<u8>) -> bool {
+        if let Some(ref cb) = self.current_block {
+            cb.current(key, val)
+        } else {
+            false
+        }
+    }
+
     // A call to valid() after seeking is necessary to ensure that the seek worked (e.g., no error
     // while reading from disk)
     fn seek(&mut self, to: &[u8]) {
@@ -324,6 +332,17 @@ impl LdbIterator for TableIterator {
         }
         // Reached in case of failure.
         self.reset();
+    }
+
+    fn reset(&mut self) {
+        self.index_block.reset();
+        self.current_block = None;
+    }
+
+    // This iterator is special in that it's valid even before the first call to advance(). It
+    // behaves correctly, though.
+    fn valid(&self) -> bool {
+        self.current_block.is_some() && (self.current_block.as_ref().unwrap().valid())
     }
 
     fn prev(&mut self) -> bool {
@@ -347,25 +366,6 @@ impl LdbIterator for TableIterator {
             } else {
                 false
             }
-        } else {
-            false
-        }
-    }
-
-    fn reset(&mut self) {
-        self.index_block.reset();
-        self.current_block = None;
-    }
-
-    // This iterator is special in that it's valid even before the first call to advance(). It
-    // behaves correctly, though.
-    fn valid(&self) -> bool {
-        self.current_block.is_some() && (self.current_block.as_ref().unwrap().valid())
-    }
-
-    fn current(&self, key: &mut Vec<u8>, val: &mut Vec<u8>) -> bool {
-        if let Some(ref cb) = self.current_block {
-            cb.current(key, val)
         } else {
             false
         }

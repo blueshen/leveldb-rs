@@ -119,7 +119,7 @@ impl InnerSkipMap {
 
     /// Returns the node with key or the next greater one
     /// Returns None if the given key lies past the greatest key in the table.
-    fn get_greater_or_equal<'a>(&'a self, key: &[u8]) -> Option<&'a Node> {
+    fn get_greater_or_equal(&self, key: &[u8]) -> Option<&Node> {
         // Start at the highest skip link of the head node, and work down from there
         let mut current = self.head.as_ref() as *const Node;
         let mut level = self.head.skips.len() - 1;
@@ -162,7 +162,7 @@ impl InnerSkipMap {
 
     /// Finds the node immediately before the node with key.
     /// Returns None if no smaller key was found.
-    fn get_next_smaller<'a>(&'a self, key: &[u8]) -> Option<&'a Node> {
+    fn get_next_smaller(&self, key: &[u8]) -> Option<&Node> {
         // Start at the highest skip link of the head node, and work down from there
         let mut current = self.head.as_ref() as *const Node;
         let mut level = self.head.skips.len() - 1;
@@ -320,19 +320,6 @@ impl LdbIterator for SkipMapIter {
         }
         r
     }
-    fn reset(&mut self) {
-        self.current = self.map.borrow().head.as_ref();
-    }
-    fn seek(&mut self, key: &[u8]) {
-        if let Some(node) = self.map.borrow().get_greater_or_equal(key) {
-            self.current = node as *const Node;
-            return;
-        }
-        self.reset();
-    }
-    fn valid(&self) -> bool {
-        self.current != self.map.borrow().head.as_ref()
-    }
     fn current(&self, key: &mut Vec<u8>, val: &mut Vec<u8>) -> bool {
         if self.valid() {
             key.clear();
@@ -345,6 +332,19 @@ impl LdbIterator for SkipMapIter {
         } else {
             false
         }
+    }
+    fn seek(&mut self, key: &[u8]) {
+        if let Some(node) = self.map.borrow().get_greater_or_equal(key) {
+            self.current = node as *const Node;
+            return;
+        }
+        self.reset();
+    }
+    fn reset(&mut self) {
+        self.current = self.map.borrow().head.as_ref();
+    }
+    fn valid(&self) -> bool {
+        self.current != self.map.borrow().head.as_ref()
     }
     fn prev(&mut self) -> bool {
         // Going after the original implementation here; we just seek to the node before current().

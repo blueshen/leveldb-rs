@@ -222,7 +222,7 @@ mod tests {
     fn test_crc_mask_crc() {
         let crc = crc32::checksum_castagnoli("abcde".as_bytes());
         assert_eq!(crc, unmask_crc(mask_crc(crc)));
-        assert!(crc != mask_crc(crc));
+        assert_ne!(crc, mask_crc(crc));
     }
 
     #[test]
@@ -245,7 +245,7 @@ mod tests {
             let _ = lw.add_record(d.as_bytes());
         }
 
-        assert_eq!(lw.current_block_offset, total_len + 3 * super::HEADER_SIZE);
+        assert_eq!(lw.current_block_offset, total_len + 3 * HEADER_SIZE);
     }
 
     #[test]
@@ -271,7 +271,7 @@ mod tests {
         // Ensure that new_with_off positions the writer correctly. Some ugly mucking about with
         // cursors and stuff is required.
         {
-            let offset = data[0].len() + super::HEADER_SIZE;
+            let offset = data[0].len() + HEADER_SIZE;
             let mut lw =
                 LogWriter::new_with_off(Cursor::new(&mut dst.as_mut_slice()[offset..]), offset);
             for d in &data[1..] {
@@ -289,7 +289,7 @@ mod tests {
             "0101010101010101010101".as_bytes().to_vec(),
         ]; // spans three blocks of 17
         let mut lw = LogWriter::new(Vec::new());
-        lw.block_size = super::HEADER_SIZE + 10;
+        lw.block_size = HEADER_SIZE + 10;
 
         for e in data.iter() {
             assert!(lw.add_record(e).is_ok());
@@ -300,7 +300,7 @@ mod tests {
         lw.dst[2] += 1;
 
         let mut lr = LogReader::new(lw.dst.as_slice(), true);
-        lr.blocksize = super::HEADER_SIZE + 10;
+        lr.blocksize = HEADER_SIZE + 10;
         let mut dst = Vec::with_capacity(128);
 
         // First record is corrupted.

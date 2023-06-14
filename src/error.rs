@@ -13,7 +13,6 @@ use snap;
 #[allow(dead_code)]
 pub enum StatusCode {
     OK,
-
     AlreadyExists,
     Corruption,
     CompressionError,

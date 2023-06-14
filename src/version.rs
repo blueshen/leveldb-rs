@@ -57,7 +57,7 @@ impl Version {
     /// get returns the value for the specified key using the persistent tables contained in this
     /// Version.
     #[allow(unused_assignments)]
-    pub fn get<'a>(&self, key: InternalKey<'a>) -> Result<Option<(Vec<u8>, GetStats)>> {
+    pub fn get(&self, key: InternalKey) -> Result<Option<(Vec<u8>, GetStats)>> {
         let levels = self.get_overlapping(key);
         let ikey = key;
         let ukey = parse_internal_key(ikey).2;
@@ -101,7 +101,7 @@ impl Version {
     }
 
     /// get_overlapping returns the files overlapping key in each level.
-    fn get_overlapping<'a>(&self, key: InternalKey<'a>) -> [Vec<FileMetaHandle>; NUM_LEVELS] {
+    fn get_overlapping(&self, key: InternalKey) -> [Vec<FileMetaHandle>; NUM_LEVELS] {
         let mut levels: [Vec<FileMetaHandle>; NUM_LEVELS] = Default::default();
         let ikey = key;
         let ukey = parse_internal_key(key).2;
@@ -162,7 +162,7 @@ impl Version {
         acc
     }
 
-    pub fn pick_memtable_output_level<'a, 'b>(&self, min: UserKey<'a>, max: UserKey<'b>) -> usize {
+    pub fn pick_memtable_output_level(&self, min: UserKey, max: UserKey) -> usize {
         let mut level = 0;
         if !self.overlap_in_level(0, min, max) {
             // Go to next level as long as there is no overlap in that level and a limited overlap
@@ -195,7 +195,7 @@ impl Version {
     /// record_read_sample returns true if there is a new file to be compacted. It counts the
     /// number of files overlapping a key, and which level contains the first overlap.
     #[allow(unused_assignments)]
-    pub fn record_read_sample<'a>(&mut self, key: InternalKey<'a>) -> bool {
+    pub fn record_read_sample(&mut self, key: InternalKey) -> bool {
         let levels = self.get_overlapping(key);
         let mut contained_in = 0;
         let mut i = 0;
@@ -279,11 +279,11 @@ impl Version {
     }
 
     /// overlapping_inputs returns all files that may contain keys between begin and end.
-    pub fn overlapping_inputs<'a, 'b>(
+    pub fn overlapping_inputs(
         &self,
         level: usize,
-        begin: InternalKey<'a>,
-        end: InternalKey<'b>,
+        begin: InternalKey,
+        end: InternalKey,
     ) -> Vec<FileMetaHandle> {
         assert!(level < NUM_LEVELS);
         let (mut ubegin, mut uend) = (

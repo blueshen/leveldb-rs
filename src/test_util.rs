@@ -33,10 +33,6 @@ impl<'a> LdbIterator for TestLdbIter<'a> {
             true
         }
     }
-    fn reset(&mut self) {
-        self.ix = 0;
-        self.init = false;
-    }
     fn current(&self, key: &mut Vec<u8>, val: &mut Vec<u8>) -> bool {
         if self.init && self.ix < self.v.len() {
             key.clear();
@@ -48,15 +44,19 @@ impl<'a> LdbIterator for TestLdbIter<'a> {
             false
         }
     }
-    fn valid(&self) -> bool {
-        self.init && self.ix < self.v.len()
-    }
     fn seek(&mut self, k: &[u8]) {
         self.ix = 0;
         self.init = true;
         while self.ix < self.v.len() && DefaultCmp.cmp(self.v[self.ix].0, k) == Ordering::Less {
             self.ix += 1;
         }
+    }
+    fn reset(&mut self) {
+        self.ix = 0;
+        self.init = false;
+    }
+    fn valid(&self) -> bool {
+        self.init && self.ix < self.v.len()
     }
     fn prev(&mut self) -> bool {
         if !self.init || self.ix == 0 {

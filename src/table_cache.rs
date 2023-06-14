@@ -44,10 +44,10 @@ impl TableCache {
         }
     }
 
-    pub fn get<'a>(
+    pub fn get(
         &mut self,
         file_num: FileNum,
-        key: InternalKey<'a>,
+        key: InternalKey,
     ) -> Result<Option<(Vec<u8>, Vec<u8>)>> {
         let tbl = self.get_table(file_num)?;
         tbl.get(key)

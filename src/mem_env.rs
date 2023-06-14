@@ -337,16 +337,16 @@ impl Env for MemEnv {
         self.0.unlock_(p)
     }
 
-    fn micros(&self) -> u64 {
-        micros()
-    }
-    fn sleep_for(&self, micros: u32) {
-        sleep_for(micros)
-    }
-
     fn new_logger(&self, p: &Path) -> Result<Logger> {
         self.open_appendable_file(p)
             .map(|dst| Logger::new(Box::new(dst)))
+    }
+    fn micros(&self) -> u64 {
+        micros()
+    }
+
+    fn sleep_for(&self, micros: u32) {
+        sleep_for(micros)
     }
 }
 
@@ -582,7 +582,7 @@ mod tests {
 
         // Rogue operation.
         assert!(fs
-            .unlock_(env::FileLock {
+            .unlock_(FileLock {
                 id: "/a/lock".to_string(),
             })
             .is_err());
@@ -591,7 +591,7 @@ mod tests {
         let p2 = Path::new("/a/lock2");
         assert!(fs.lock_(p2).is_ok());
         assert!(fs
-            .unlock_(env::FileLock {
+            .unlock_(FileLock {
                 id: "/a/lock2".to_string(),
             })
             .is_ok());

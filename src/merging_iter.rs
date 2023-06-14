@@ -151,9 +151,9 @@ impl LdbIterator for MergingIter {
         }
         self.valid()
     }
-    fn valid(&self) -> bool {
+    fn current(&self, key: &mut Vec<u8>, val: &mut Vec<u8>) -> bool {
         if let Some(ix) = self.current {
-            self.iters[ix].valid()
+            self.iters[ix].current(key, val)
         } else {
             false
         }
@@ -170,9 +170,9 @@ impl LdbIterator for MergingIter {
         }
         self.current = None;
     }
-    fn current(&self, key: &mut Vec<u8>, val: &mut Vec<u8>) -> bool {
+    fn valid(&self) -> bool {
         if let Some(ix) = self.current {
-            self.iters[ix].current(key, val)
+            self.iters[ix].valid()
         } else {
             false
         }
@@ -288,7 +288,7 @@ mod tests {
         let third = miter.next();
         eprintln!("{:?} {:?} {:?}", first, second, third);
 
-        assert!(first != third);
+        assert_ne!(first, third);
         // abb <-
         assert!(miter.prev());
         assert_eq!(second, current_key_val(&miter));

@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-
+use std::cmp::min;
 use crate::block::BlockContents;
 use crate::options::Options;
 
@@ -60,14 +60,8 @@ impl BlockBuilder {
         );
 
         let mut shared = 0;
-
         if self.restart_counter < self.opt.block_restart_interval {
-            let smallest = if self.last_key.len() < key.len() {
-                self.last_key.len()
-            } else {
-                key.len()
-            };
-
+            let smallest = min(self.last_key.len(),key.len());
             while shared < smallest && self.last_key[shared] == key[shared] {
                 shared += 1;
             }
@@ -78,7 +72,6 @@ impl BlockBuilder {
         }
 
         let non_shared = key.len() - shared;
-
         self.buffer
             .write_varint(shared)
             .expect("write to buffer failed");

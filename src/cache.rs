@@ -211,7 +211,7 @@ impl<T> Cache<T> {
 
     /// Retrieve an element from the cache.
     /// If the element has been preempted from the cache in the meantime, this returns None.
-    pub fn get<'a>(&'a mut self, key: &CacheKey) -> Option<&'a T> {
+    pub fn get(&mut self, key: &CacheKey) -> Option<&T> {
         match self.map.get(key) {
             None => None,
             Some(&(ref elem, ref lru_handle)) => {

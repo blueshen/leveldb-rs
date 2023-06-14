@@ -213,47 +213,16 @@ impl LdbIterator for BlockIter {
         }
     }
 
-    fn reset(&mut self) {
-        self.offset = 0;
-        self.val_offset = 0;
-        self.current_restart_ix = 0;
-        self.key.clear();
-    }
-
-    fn prev(&mut self) -> bool {
-        // as in the original implementation -- seek to last restart point, then look for key
-        let orig_offset = self.current_entry_offset;
-
-        // At the beginning, can't go further back
-        if orig_offset == 0 {
-            self.reset();
-            return false;
+    fn current(&self, key: &mut Vec<u8>, val: &mut Vec<u8>) -> bool {
+        if self.valid() {
+            key.clear();
+            val.clear();
+            key.extend_from_slice(&self.key);
+            val.extend_from_slice(&self.block[self.val_offset..self.offset]);
+            true
+        } else {
+            false
         }
-
-        while self.get_restart_point(self.current_restart_ix) >= orig_offset {
-            // todo: double check this
-            if self.current_restart_ix == 0 {
-                self.offset = self.restarts_off;
-                self.current_restart_ix = self.number_restarts();
-                break;
-            }
-            self.current_restart_ix -= 1;
-        }
-
-        self.offset = self.get_restart_point(self.current_restart_ix);
-        assert!(self.offset < orig_offset);
-
-        let mut result;
-
-        // Stop if the next entry would be the original one (self.offset always points to the start
-        // of the next entry)
-        loop {
-            result = self.advance();
-            if self.offset >= orig_offset {
-                break;
-            }
-        }
-        result
     }
 
     fn seek(&mut self, to: &[u8]) {
@@ -292,20 +261,51 @@ impl LdbIterator for BlockIter {
         }
     }
 
+    fn reset(&mut self) {
+        self.offset = 0;
+        self.val_offset = 0;
+        self.current_restart_ix = 0;
+        self.key.clear();
+    }
+
     fn valid(&self) -> bool {
         !self.key.is_empty() && self.val_offset > 0 && self.val_offset <= self.restarts_off
     }
 
-    fn current(&self, key: &mut Vec<u8>, val: &mut Vec<u8>) -> bool {
-        if self.valid() {
-            key.clear();
-            val.clear();
-            key.extend_from_slice(&self.key);
-            val.extend_from_slice(&self.block[self.val_offset..self.offset]);
-            true
-        } else {
-            false
+    fn prev(&mut self) -> bool {
+        // as in the original implementation -- seek to last restart point, then look for key
+        let orig_offset = self.current_entry_offset;
+
+        // At the beginning, can't go further back
+        if orig_offset == 0 {
+            self.reset();
+            return false;
         }
+
+        while self.get_restart_point(self.current_restart_ix) >= orig_offset {
+            // todo: double check this
+            if self.current_restart_ix == 0 {
+                self.offset = self.restarts_off;
+                self.current_restart_ix = self.number_restarts();
+                break;
+            }
+            self.current_restart_ix -= 1;
+        }
+
+        self.offset = self.get_restart_point(self.current_restart_ix);
+        assert!(self.offset < orig_offset);
+
+        let mut result;
+
+        // Stop if the next entry would be the original one (self.offset always points to the start
+        // of the next entry)
+        loop {
+            result = self.advance();
+            if self.offset >= orig_offset {
+                break;
+            }
+        }
+        result
     }
 }
 

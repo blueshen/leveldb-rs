@@ -208,6 +208,32 @@ impl LdbIterator for DBIterator {
             true
         }
     }
+    fn seek(&mut self, to: &[u8]) {
+        self.dir = Direction::Forward;
+        self.savedkey.clear();
+        self.savedval.clear();
+        self.savedkey
+            .extend_from_slice(LookupKey::new(to, self.ss.sequence()).internal_key());
+        self.iter.seek(&self.savedkey);
+        if self.iter.valid() {
+            self.find_next_user_entry(
+                // skipping=
+                false,
+            );
+        } else {
+            self.valid = false;
+        }
+    }
+    fn reset(&mut self) {
+        self.iter.reset();
+        self.valid = false;
+        self.savedkey.clear();
+        self.savedval.clear();
+        self.keybuf.clear();
+    }
+    fn valid(&self) -> bool {
+        self.valid
+    }
     fn prev(&mut self) -> bool {
         if !self.valid() {
             return false;
@@ -239,25 +265,6 @@ impl LdbIterator for DBIterator {
         }
         self.find_prev_user_entry()
     }
-    fn valid(&self) -> bool {
-        self.valid
-    }
-    fn seek(&mut self, to: &[u8]) {
-        self.dir = Direction::Forward;
-        self.savedkey.clear();
-        self.savedval.clear();
-        self.savedkey
-            .extend_from_slice(LookupKey::new(to, self.ss.sequence()).internal_key());
-        self.iter.seek(&self.savedkey);
-        if self.iter.valid() {
-            self.find_next_user_entry(
-                // skipping=
-                false,
-            );
-        } else {
-            self.valid = false;
-        }
-    }
     fn seek_to_first(&mut self) {
         self.dir = Direction::Forward;
         self.savedval.clear();
@@ -270,13 +277,6 @@ impl LdbIterator for DBIterator {
         } else {
             self.valid = false;
         }
-    }
-    fn reset(&mut self) {
-        self.iter.reset();
-        self.valid = false;
-        self.savedkey.clear();
-        self.savedval.clear();
-        self.keybuf.clear();
     }
 }
 
@@ -419,7 +419,7 @@ mod tests {
         let must_not_appear = b"gca";
 
         for (k, _) in LdbIteratorIter::wrap(&mut iter) {
-            assert!(k.as_slice() != must_not_appear);
+            assert_ne!(k.as_slice(), must_not_appear);
         }
     }
 
@@ -434,7 +434,7 @@ mod tests {
         let must_not_appear = b"xyz";
 
         for (k, _) in LdbIteratorIter::wrap(&mut iter) {
-            assert!(k.as_slice() != must_not_appear);
+            assert_ne!(k.as_slice(), must_not_appear);
         }
     }
 

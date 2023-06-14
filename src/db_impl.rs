@@ -37,7 +37,7 @@ use std::path::Path;
 use std::path::PathBuf;
 use std::rc::Rc;
 
-/// DB contains the actual database implemenation. As opposed to the original, this implementation
+/// DB contains the actual database implementation. As opposed to the original, this implementation
 /// is not concurrent (yet).
 pub struct DB {
     name: PathBuf,
@@ -83,18 +83,14 @@ impl DB {
             lock: None,
             internal_cmp: Rc::new(Box::new(InternalKeyCmp(opt.cmp.clone()))),
             fpol: InternalFilterPolicy::new(opt.filter_policy.clone()),
-
             mem: MemTable::new(opt.cmp.clone()),
             imm: None,
-
             opt,
-
             log: None,
             log_num: None,
             cache,
             vset: share(vset),
             snaps: SnapshotList::new(),
-
             cstats: Default::default(),
         }
     }
@@ -549,7 +545,7 @@ impl DB {
     }
 
     /// Trigger a compaction based on where this key is located in the different levels.
-    fn record_read_sample<'a>(&mut self, k: InternalKey<'a>) {
+    fn record_read_sample(&mut self, k: InternalKey) {
         let current = self.current();
         if current.borrow_mut().record_read_sample(k) {
             if let Err(e) = self.maybe_do_compaction() {

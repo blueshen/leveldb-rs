@@ -87,32 +87,6 @@ impl LdbIterator for MemtableIterator {
         }
         self.skipmapiter.valid()
     }
-    fn reset(&mut self) {
-        self.skipmapiter.reset();
-    }
-    fn prev(&mut self) -> bool {
-        // Make sure this is actually needed (skipping deleted values?).
-        let (mut key, mut val) = (vec![], vec![]);
-        loop {
-            if !self.skipmapiter.prev() {
-                return false;
-            }
-            if self.skipmapiter.current(&mut key, &mut val) {
-                let (_, _, tag, _, _) = parse_memtable_key(&key);
-
-                if tag & 0xff == ValueType::TypeValue as u64 {
-                    return true;
-                } else {
-                    continue;
-                }
-            } else {
-                return false;
-            }
-        }
-    }
-    fn valid(&self) -> bool {
-        self.skipmapiter.valid()
-    }
     /// current places the current key (in InternalKey format) and value into the supplied vectors.
     fn current(&self, key: &mut Vec<u8>, val: &mut Vec<u8>) -> bool {
         if !self.valid() {
@@ -138,6 +112,32 @@ impl LdbIterator for MemtableIterator {
         let (_, seq, ukey) = parse_internal_key(to);
         self.skipmapiter
             .seek(LookupKey::new(ukey, seq).memtable_key());
+    }
+    fn reset(&mut self) {
+        self.skipmapiter.reset();
+    }
+    fn valid(&self) -> bool {
+        self.skipmapiter.valid()
+    }
+    fn prev(&mut self) -> bool {
+        // Make sure this is actually needed (skipping deleted values?).
+        let (mut key, mut val) = (vec![], vec![]);
+        loop {
+            if !self.skipmapiter.prev() {
+                return false;
+            }
+            if self.skipmapiter.current(&mut key, &mut val) {
+                let (_, _, tag, _, _) = parse_memtable_key(&key);
+
+                if tag & 0xff == ValueType::TypeValue as u64 {
+                    return true;
+                } else {
+                    continue;
+                }
+            } else {
+                return false;
+            }
+        }
     }
 }
 

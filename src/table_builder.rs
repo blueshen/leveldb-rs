@@ -37,9 +37,9 @@ pub struct Footer {
 /// [ { table data ... , METAINDEX blockhandle, INDEX blockhandle, PADDING bytes } = 40 bytes,
 /// MAGIC_FOOTER_ENCODED ]
 impl Footer {
-    pub fn new(metaix: BlockHandle, index: BlockHandle) -> Footer {
+    pub fn new(meta_index: BlockHandle, index: BlockHandle) -> Footer {
         Footer {
-            meta_index: metaix,
+            meta_index,
             index,
         }
     }
@@ -170,7 +170,7 @@ impl<Dst: Write> TableBuilder<Dst> {
     /// Writes an index entry for the current data_block where `next_key` is the first key of the
     /// next block.
     /// Calls write_block() for writing the block to disk.
-    fn write_data_block<'b>(&mut self, next_key: InternalKey<'b>) -> Result<()> {
+    fn write_data_block(&mut self, next_key: InternalKey) -> Result<()> {
         assert!(self.data_block.is_some());
 
         let block = self.data_block.take().unwrap();
