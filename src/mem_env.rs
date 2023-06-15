@@ -353,7 +353,6 @@ impl Env for MemEnv {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::env;
 
     fn new_memfile(v: Vec<u8>) -> MemFile {
         MemFile(Arc::new(Mutex::new(v)))

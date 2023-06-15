@@ -4,7 +4,9 @@ use crate::types::{FileMetaData, FileNum, SequenceNumber};
 
 use integer_encoding::{VarIntReader, VarIntWriter};
 
+use crate::Status;
 use std::collections::HashSet;
+use std::convert::TryFrom;
 use std::io::{Read, Write};
 
 #[derive(PartialEq, Debug, Clone)]
@@ -25,17 +27,20 @@ enum EditTag {
     PrevLogNumber = 9, // sic!
 }
 
-fn tag_to_enum(t: u32) -> Option<EditTag> {
-    match t {
-        1 => Some(EditTag::Comparator),
-        2 => Some(EditTag::LogNumber),
-        3 => Some(EditTag::NextFileNumber),
-        4 => Some(EditTag::LastSequence),
-        5 => Some(EditTag::CompactPointer),
-        6 => Some(EditTag::DeletedFile),
-        7 => Some(EditTag::NewFile),
-        9 => Some(EditTag::PrevLogNumber),
-        _ => None,
+impl TryFrom<u8> for EditTag {
+    type Error = Status;
+    fn try_from(value: u8) -> std::result::Result<Self, Self::Error> {
+        match value {
+            1 => Ok(EditTag::Comparator),
+            2 => Ok(EditTag::LogNumber),
+            3 => Ok(EditTag::NextFileNumber),
+            4 => Ok(EditTag::LastSequence),
+            5 => Ok(EditTag::CompactPointer),
+            6 => Ok(EditTag::DeletedFile),
+            7 => Ok(EditTag::NewFile),
+            9 => Ok(EditTag::PrevLogNumber),
+            _ => Err(Status::new(StatusCode::InvalidArgument, "unknown tag")),
+        }
     }
 }
 
@@ -188,7 +193,7 @@ impl VersionEdit {
         let mut ve = VersionEdit::new();
 
         while let Ok(tag) = reader.read_varint::<u32>() {
-            if let Some(tag) = tag_to_enum(tag) {
+            if let Ok(tag) = EditTag::try_from(tag as u8) {
                 match tag {
                     EditTag::Comparator => {
                         let buf = read_length_prefixed(&mut reader)?;
