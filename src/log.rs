@@ -7,8 +7,7 @@ use crate::error::{err, Result, StatusCode};
 
 use std::io::{Read, Write};
 
-use crc::crc32;
-use crc::Hasher32;
+use crc::{Crc, CRC_32_ISCSI};
 use integer_encoding::FixedInt;
 use integer_encoding::FixedIntWriter;
 
@@ -25,19 +24,16 @@ pub enum RecordType {
 
 pub struct LogWriter<W: Write> {
     dst: W,
-    digest: crc32::Digest,
     current_block_offset: usize,
     block_size: usize,
 }
 
 impl<W: Write> LogWriter<W> {
     pub fn new(writer: W) -> LogWriter<W> {
-        let digest = crc32::Digest::new(crc32::CASTAGNOLI);
         LogWriter {
             dst: writer,
             current_block_offset: 0,
             block_size: BLOCK_SIZE,
-            digest,
         }
     }
 
@@ -93,12 +89,12 @@ impl<W: Write> LogWriter<W> {
 
     fn emit_record(&mut self, t: RecordType, data: &[u8], len: usize) -> Result<usize> {
         assert!(len < 256 * 256);
+        let crc32 = Crc::<u32>::new(&CRC_32_ISCSI);
+        let mut digest = crc32.digest();
+        digest.update(&[t as u8]);
+        digest.update(&data[0..len]);
 
-        self.digest.reset();
-        self.digest.write(&[t as u8]);
-        self.digest.write(&data[0..len]);
-
-        let chksum = mask_crc(self.digest.sum32());
+        let chksum = mask_crc(digest.finalize());
 
         let mut s = 0;
         s += self.dst.write(&chksum.encode_fixed_vec())?;
@@ -119,7 +115,6 @@ impl<W: Write> LogWriter<W> {
 pub struct LogReader<R: Read> {
     // TODO: Wrap src in a buffer to enhance read performance.
     src: R,
-    digest: crc32::Digest,
     blk_off: usize,
     blocksize: usize,
     head_scratch: [u8; 7],
@@ -134,7 +129,6 @@ impl<R: Read> LogReader<R> {
             blocksize: BLOCK_SIZE,
             checksums: chksum,
             head_scratch: [0; 7],
-            digest: crc32::Digest::new(crc32::CASTAGNOLI),
         }
     }
 
@@ -195,10 +189,11 @@ impl<R: Read> LogReader<R> {
     }
 
     fn check_integrity(&mut self, typ: u8, data: &[u8], expected: u32) -> bool {
-        self.digest.reset();
-        self.digest.write(&[typ]);
-        self.digest.write(data);
-        unmask_crc(expected) == self.digest.sum32()
+        let crc32 = Crc::<u32>::new(&CRC_32_ISCSI);
+        let mut digest = crc32.digest();
+        digest.update(&[typ]);
+        digest.update(data);
+        unmask_crc(expected) == digest.finalize()
     }
 }
 
@@ -217,18 +212,19 @@ pub fn unmask_crc(mc: u32) -> u32 {
 mod tests {
     use super::*;
     use std::io::Cursor;
+    use crc::{Crc, CRC_32_ISCSI};
 
     #[test]
     fn test_crc_mask_crc() {
-        let crc = crc32::checksum_castagnoli("abcde".as_bytes());
+        let crc = Crc::<u32>::new(&CRC_32_ISCSI).checksum("abcde".as_bytes());
         assert_eq!(crc, unmask_crc(mask_crc(crc)));
         assert_ne!(crc, mask_crc(crc));
     }
 
     #[test]
     fn test_crc_sanity() {
-        assert_eq!(0x8a9136aa, crc32::checksum_castagnoli(&[0 as u8; 32]));
-        assert_eq!(0x62a8ab43, crc32::checksum_castagnoli(&[0xff as u8; 32]));
+        assert_eq!(0x8a9136aa, Crc::<u32>::new(&CRC_32_ISCSI).checksum(&[0 as u8; 32]));
+        assert_eq!(0x62a8ab43, Crc::<u32>::new(&CRC_32_ISCSI).checksum(&[0xff as u8; 32]));
     }
 
     #[test]

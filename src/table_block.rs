@@ -8,7 +8,7 @@ use crate::log::unmask_crc;
 use crate::options::{self, CompressionType, Options};
 use crate::table_builder;
 
-use crc::crc32::{self, Hasher32};
+use crc::{Crc, CRC_32_ISCSI};
 use integer_encoding::FixedInt;
 
 /// Reads the data for the specified block handle from a file.
@@ -85,8 +85,9 @@ pub fn read_table_block(
 
 /// Verify checksum of block
 fn verify_table_block(data: &[u8], compression: u8, want: u32) -> bool {
-    let mut digest = crc32::Digest::new(crc32::CASTAGNOLI);
-    digest.write(data);
-    digest.write(&[compression; 1]);
-    digest.sum32() == want
+    let crc32 = Crc::<u32>::new(&CRC_32_ISCSI);
+    let mut digest = crc32.digest();
+    digest.update(data);
+    digest.update(&[compression; 1]);
+    digest.finalize() == want
 }

@@ -13,8 +13,7 @@ use std::cmp::Ordering;
 use std::io::Write;
 use std::rc::Rc;
 
-use crc::crc32;
-use crc::Hasher32;
+use crc::{Crc, CRC_32_ISCSI};
 use integer_encoding::FixedIntWriter;
 
 pub const FOOTER_LENGTH: usize = 40;
@@ -204,14 +203,14 @@ impl<Dst: Write> TableBuilder<Dst> {
             data = snap::raw::Encoder::new().compress_vec(&data)?;
         }
 
-        let mut digest = crc32::Digest::new(crc32::CASTAGNOLI);
-
-        digest.write(&data);
-        digest.write(&[ctype as u8; TABLE_BLOCK_COMPRESS_LEN]);
+        let crc32 = Crc::<u32>::new(&CRC_32_ISCSI);
+        let mut digest = crc32.digest();
+        digest.update(&data);
+        digest.update(&[ctype as u8; TABLE_BLOCK_COMPRESS_LEN]);
 
         self.dst.write(&data)?;
         self.dst.write(&[ctype as u8; TABLE_BLOCK_COMPRESS_LEN])?;
-        self.dst.write_fixedint(mask_crc(digest.sum32()))?;
+        self.dst.write_fixedint(mask_crc(digest.finalize()))?;
 
         let handle = BlockHandle::new(self.offset, data.len());
         self.offset += data.len() + TABLE_BLOCK_COMPRESS_LEN + TABLE_BLOCK_CKSUM_LEN;
