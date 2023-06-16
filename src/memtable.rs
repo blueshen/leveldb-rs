@@ -128,7 +128,6 @@ impl LdbIterator for MemtableIterator {
             }
             if self.skipmapiter.current(&mut key, &mut val) {
                 let (_, _, tag, _, _) = parse_memtable_key(&key);
-
                 if tag & 0xff == ValueType::TypeValue as u64 {
                     return true;
                 } else {
@@ -143,11 +142,8 @@ impl LdbIterator for MemtableIterator {
 
 /// shift_left moves s[mid..] to s[0..s.len()-mid]. The new size is s.len()-mid.
 fn shift_left(s: &mut Vec<u8>, mid: usize) {
-    for i in mid..s.len() {
-        s.swap(i, i - mid);
-    }
-    let newlen = s.len() - mid;
-    s.truncate(newlen);
+    s.rotate_left(mid);
+    s.truncate(s.len() - mid);
 }
 
 #[cfg(test)]

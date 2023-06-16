@@ -762,7 +762,7 @@ impl Builder {
         }
         for &(level, ref f) in edit.new_files.iter() {
             let mut f = f.clone();
-            f.allowed_seeks = f.size / 16384;
+            f.allowed_seeks = f.size >> 14; // 16384;
             if f.allowed_seeks < 100 {
                 f.allowed_seeks = 100;
             }
