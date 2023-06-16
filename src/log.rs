@@ -211,8 +211,8 @@ pub fn unmask_crc(mc: u32) -> u32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::Cursor;
     use crc::{Crc, CRC_32_ISCSI};
+    use std::io::Cursor;
 
     #[test]
     fn test_crc_mask_crc() {
@@ -223,8 +223,14 @@ mod tests {
 
     #[test]
     fn test_crc_sanity() {
-        assert_eq!(0x8a9136aa, Crc::<u32>::new(&CRC_32_ISCSI).checksum(&[0 as u8; 32]));
-        assert_eq!(0x62a8ab43, Crc::<u32>::new(&CRC_32_ISCSI).checksum(&[0xff as u8; 32]));
+        assert_eq!(
+            0x8a9136aa,
+            Crc::<u32>::new(&CRC_32_ISCSI).checksum(&[0 as u8; 32])
+        );
+        assert_eq!(
+            0x62a8ab43,
+            Crc::<u32>::new(&CRC_32_ISCSI).checksum(&[0xff as u8; 32])
+        );
     }
 
     #[test]

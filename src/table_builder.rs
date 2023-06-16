@@ -37,10 +37,7 @@ pub struct Footer {
 /// MAGIC_FOOTER_ENCODED ]
 impl Footer {
     pub fn new(meta_index: BlockHandle, index: BlockHandle) -> Footer {
-        Footer {
-            meta_index,
-            index,
-        }
+        Footer { meta_index, index }
     }
 
     pub fn decode(from: &[u8]) -> Option<Footer> {
